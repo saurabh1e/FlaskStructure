@@ -3,13 +3,13 @@ import os
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
 
-from src import api, db, ma, create_app, configs, bp
+from src import api, db, ma, create_app, configs, bp, security
 
 config = os.environ.get('PYTH_SRVR')
 
 config = configs.get(config, 'default')
 
-extensions = [api, db, ma]
+extensions = [api, db, ma, security]
 bps = [bp]
 
 app = create_app(__name__, config, extensions=extensions, blueprints=bps)

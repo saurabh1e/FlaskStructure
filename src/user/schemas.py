@@ -1,5 +1,5 @@
-from . import ma
-from .models import User, UserProfile
+from src import ma
+from .models import UserProfile, User
 
 
 class UserSchema(ma.ModelSchema):
@@ -9,8 +9,7 @@ class UserSchema(ma.ModelSchema):
         exclude = ('created_on', 'updated_on')
 
     id = ma.Integer(dump_only=True)
-    password = ma.String(load_only=True)
-    user_profile = ma.Nested('UserProfileSchema', many=False)
+    email = ma.Email()
 
 
 class UserProfileSchema(ma.ModelSchema):
