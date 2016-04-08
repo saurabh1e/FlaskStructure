@@ -69,6 +69,7 @@ class UserListResource(BaseResource):
         return jsonify({'success': 200, 'message': 'user added successfully', 'data': self.schema().dump(user).data})
 
 
+api.add_resource(UserListResource, '/users/', endpoint='users')
 api.add_resource(UserResource, '/user/<int:slug>/', endpoint='user')
 
 
@@ -126,8 +127,7 @@ class UserProfileListResource(BaseResource):
                 int(request.args['page'])).items
         return jsonify({'success': 200, 'data': self.schema().dump(resources, many=True)})
 
-
-def post(self):
+    def post(self):
 
         user_profile, errors = self.schema().load(request.json, session=db.session)
         if errors:
