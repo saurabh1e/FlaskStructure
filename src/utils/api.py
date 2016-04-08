@@ -16,3 +16,7 @@ def authenticate(func):
 
 class BaseResource(Resource):
     method_decorators = [auth_token_required, roles_required('admin')]
+
+
+class OpenResource(Resource):
+    pass

@@ -1,7 +1,9 @@
 from flask import jsonify, request, make_response
-from src import api, BaseResource, db
+
+from src import api, BaseResource, db, OpenResource
 from .models import UserProfile, User
 from .schemas import UserSchema, UserProfileSchema
+from flask_security.utils import verify_and_update_password, login_user
 
 
 class UserResource(BaseResource):
@@ -135,3 +137,22 @@ def post(self):
 
 api.add_resource(UserProfileResource, '/user_profile/<int:slug>/', endpoint='user_profile')
 api.add_resource(UserProfileListResource, '/user_profiles/', endpoint='user_profiles')
+
+
+class UserLoginResource(OpenResource):
+
+    model = User
+    schema = UserSchema
+
+    def post(self):
+
+        data = request.json
+        user = self.model.query.filter(self.model.email == data['email']).first()
+        if verify_and_update_password(data['password'], user) and login_user(user):
+            user_data = self.schema().dump(user).data
+            user_data['authentication_token'] = user.get_auth_token()
+            return jsonify({'success': 200, 'data': user_data})
+        else:
+            return make_response(jsonify({'error': 403, 'data': 'invalid data'}), 403)
+
+api.add_resource(UserLoginResource, '/login/', endpoint='login')
