@@ -1,9 +1,11 @@
-from flask import jsonify, request, make_response
-
-from src import api, BaseResource, db, OpenResource
-from .models import UserProfile, User
-from .schemas import UserSchema, UserProfileSchema
+from flask import jsonify, request, make_response, redirect
 from flask_security.utils import verify_and_update_password, login_user
+from flask_security import current_user
+from sqlalchemy import or_
+
+from src import api, BaseResource, db, OpenResource, CommonResource
+from .models import UserProfile, User, School, Chat
+from .schemas import UserSchema, UserProfileSchema, SchoolSchema, ChatSchema
 
 
 class UserResource(BaseResource):
@@ -16,7 +18,7 @@ class UserResource(BaseResource):
         user = self.model.query.get(slug)
         if not user:
             return make_response(jsonify({'error': 100, 'message': 'User not found'}), 404)
-        user_dump = self.schema().dump(user).data
+        user_dump = self.schema(exclude=('username',)).dump(user).data
         db.session.commit()
 
         return jsonify({'success': 200, 'data': user_dump})
@@ -31,7 +33,7 @@ class UserResource(BaseResource):
             return make_response(jsonify({'error': 101, 'message': str(errors)}), 403)
         db.session.commit()
 
-        return jsonify({'success': 200, 'message': 'user updated successfully', 'data': self.schema().dump(user).data})
+        return jsonify({'success': 200, 'message': 'user updated successfully', 'data': self.schema(exclude=('username',)).dump(user).data})
 
     def delete(self, slug):
 
@@ -58,15 +60,21 @@ class UserListResource(BaseResource):
         else:
             resources = users.paginate(
                 int(request.args['page'])).items
-        return jsonify({'success': 200, 'data': self.schema().dump(resources, many=True)})
+        return jsonify({'success': 200, 'data': self.schema(exclude=('username',)).dump(resources, many=True)})
 
     def post(self):
-
         user, errors = self.schema().load(request.json, session=db.session)
         if errors:
+            db.session.rollback()
             return make_response(jsonify({'error': 101, 'message': str(errors)}), 403)
+        db.session.add(user)
         db.session.commit()
-        return jsonify({'success': 200, 'message': 'user added successfully', 'data': self.schema().dump(user).data})
+        user_count = self.model.query.filter(self.model.school_id == user.school_id).count()
+        user.username = user.user_type[3] + (str(user.school_id) + str(user_count)).rjust(5, '0')
+        db.session.commit()
+
+        return jsonify({'success': 200, 'message': 'user added successfully',
+                        'data': self.schema(exclude=('username',)).dump(user).data})
 
 
 api.add_resource(UserListResource, '/users/', endpoint='users')
@@ -145,14 +153,60 @@ class UserLoginResource(OpenResource):
     schema = UserSchema
 
     def post(self):
+        if request.json:
+            data = request.json
 
-        data = request.json
-        user = self.model.query.filter(self.model.email == data['email']).first()
-        if verify_and_update_password(data['password'], user) and login_user(user):
-            user_data = self.schema().dump(user).data
-            user_data['authentication_token'] = user.get_auth_token()
-            return jsonify({'success': 200, 'data': user_data})
+            user = self.model.query.filter(self.model.email == data['email']).first()
+            if user and verify_and_update_password(data['password'], user) and login_user(user):
+                user_data = self.schema().dump(user).data
+                return jsonify({'success': 200, 'data': user_data})
+            else:
+                return make_response(jsonify({'error': 403, 'data': 'invalid data'}), 403)
         else:
-            return make_response(jsonify({'error': 403, 'data': 'invalid data'}), 403)
+            data = request.form
+            user = self.model.query.filter(self.model.email == data['email']).first()
+            if user and verify_and_update_password(data['password'], user) and login_user(user):
+                return redirect('/test/v1/admin/', 302)
 
 api.add_resource(UserLoginResource, '/login/', endpoint='login')
+
+
+class SchoolCodeGenerationResource(OpenResource):
+
+    model = School
+    schema = SchoolSchema
+
+    def get(self, slug):
+        school = self.model.query.get(slug)
+
+        return jsonify({'success': True, 'student_code': school.generate_code('student'),
+                        'counsellor_code': school.generate_code('counsellor')})
+
+api.add_resource(SchoolCodeGenerationResource, '/school/<int:slug>/', endpoint='school')
+
+
+class ChatListResource(CommonResource):
+
+    model = Chat
+    schema = ChatSchema
+
+    def get(self):
+
+        chats = self.model.query.filter(or_(self.model.sender_id == current_user.id, self.model.receiver_id == current_user.id))\
+            .group_by(self.model.receiver_id).all()
+
+        return jsonify({'success': 200, 'data': self.schema().dump(chats, many=True)})
+
+    def post(self):
+
+        data = request.json
+        data['sender_id'] = current_user.id
+        data['receiver_id'] = User.query.with_entities(User.username).filter(User.username == data['receiver']).first()[0]
+        chat, errors = self.schema().load(request.json, session=db.session)
+        if errors:
+            return make_response(jsonify({'error': 101, 'message': str(errors)}), 403)
+        db.session.commit()
+        return jsonify({'success': 200, 'message': 'user_profile added successfully', 'data': self.schema().dump(chat).data})
+
+api.add_resource(ChatListResource, '/chats/', endpoint='chats')
+

@@ -10,6 +10,18 @@ class BaseConfig:
     MARSHMALLOW_STRICT = True
     MARSHMALLOW_DATEFORMAT = 'rfc'
 
+    SECRET_KEY = 'test_key'
+    SECURITY_LOGIN_SALT = 'test'
+    SECURITY_PASSWORD_HASH = 'pbkdf2_sha512'
+    SECURITY_TRACKABLE = True
+    SECURITY_PASSWORD_SALT = 'something_super_secret_change_in_production'
+    WTF_CSRF_ENABLED = False
+    SECURITY_LOGIN_URL = '/test/v1/login/'
+    SECURITY_LOGOUT_URL = '/test/v1/logout/'
+    SECURITY_POST_LOGIN_VIEW = '/test/v1/admin/'
+    AUTH_HEADER_NAME = 'authentication-token'
+    MAX_AGE = 86400
+
     @staticmethod
     def init_app(app):
         pass
@@ -19,8 +31,7 @@ class BaseConfig:
 
 class DevConfig(BaseConfig):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URI') or \
-                              'sqlite:///{}'.format(os.path.join(basedir, 'dev-sqlite.db'))
+    SQLALCHEMY_DATABASE_URI = 'mysql://root:root@localhost/chatapp'
 
 
 class TestConfig(BaseConfig):

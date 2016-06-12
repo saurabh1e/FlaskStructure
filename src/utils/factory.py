@@ -10,7 +10,6 @@ def create_app(package_name, config, blueprints=None, extensions=None):
     if blueprints:
         for bp in blueprints:
             app.register_blueprint(bp)
-    print(blueprints, app.blueprints.values())
     if extensions:
         for extension in extensions:
             extension.init_app(app)

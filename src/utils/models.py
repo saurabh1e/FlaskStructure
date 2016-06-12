@@ -15,7 +15,6 @@ class BaseMixin(object):
 
     @declared_attr
     def __tablename__(self):
-        print(to_underscore(self.__name__))
         return to_underscore(self.__name__)
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
