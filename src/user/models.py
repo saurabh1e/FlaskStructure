@@ -10,10 +10,6 @@ roles_users = db.Table('roles_users',
                        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
 
-class UserName(db.Model, ReprMixin, BaseMixin):
-    name = db.Column(db.String(127), nullable=True)
-
-
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
@@ -79,28 +75,3 @@ class UserProfile(db.Model, BaseMixin):
             return datetime.now().year - self.dob.year
         else:
             return 0
-
-
-class School(db.Model, BaseMixin, ReprMixin):
-    name = db.Column(db.String(127), nullable=False, unique=True)
-
-    users = db.relationship('User', uselist=True, lazy='dynamic', backref='school')
-
-    def generate_code(self, user_type):
-        return serialize_data([self.id, user_type])
-
-    @hybrid_property
-    def school_counsellors(self):
-        counsellors = User.query.filter(User.user_type == 'counsellor', User.school_id == self.id).all()
-        return counsellors
-
-
-class Chat(db.Model, BaseMixin):
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    message = db.Column(db.Text(), nullable=False, default='')
-    is_read = db.Column(db.Boolean(False))
-    read_on = db.Column(db.TIMESTAMP, default=None)
-
-    sender = db.relationship('User', lazy='subquery', foreign_keys=[sender_id])
-    receiver = db.relationship('User', lazy='subquery', foreign_keys=[receiver_id])

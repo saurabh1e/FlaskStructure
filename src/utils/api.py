@@ -18,16 +18,8 @@ class BaseResource(Resource):
     method_decorators = [auth_token_required, roles_required('admin')]
 
 
-class StudentResource(Resource):
-    method_decorators = [roles_accepted('admin', 'student'), auth_token_required]
-
-
-class CounsellorResource(Resource):
-    method_decorators = [roles_accepted('admin', 'counsellor'), auth_token_required]
-
-
 class CommonResource(Resource):
-    method_decorators = [roles_accepted('admin', 'counsellor', 'student'), auth_token_required]
+    method_decorators = [roles_accepted('admin', 'user', 'guest'), auth_token_required]
 
 
 class OpenResource(Resource):

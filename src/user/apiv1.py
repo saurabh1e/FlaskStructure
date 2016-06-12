@@ -3,9 +3,9 @@ from flask_security.utils import verify_and_update_password, login_user
 from flask_security import current_user
 from sqlalchemy import or_
 
-from src import api, BaseResource, db, OpenResource, CommonResource
-from .models import UserProfile, User, School, Chat
-from .schemas import UserSchema, UserProfileSchema, SchoolSchema, ChatSchema
+from src import api, BaseResource, db, OpenResource
+from .models import UserProfile, User
+from .schemas import UserSchema, UserProfileSchema
 
 
 class UserResource(BaseResource):
@@ -169,44 +169,3 @@ class UserLoginResource(OpenResource):
                 return redirect('/test/v1/admin/', 302)
 
 api.add_resource(UserLoginResource, '/login/', endpoint='login')
-
-
-class SchoolCodeGenerationResource(OpenResource):
-
-    model = School
-    schema = SchoolSchema
-
-    def get(self, slug):
-        school = self.model.query.get(slug)
-
-        return jsonify({'success': True, 'student_code': school.generate_code('student'),
-                        'counsellor_code': school.generate_code('counsellor')})
-
-api.add_resource(SchoolCodeGenerationResource, '/school/<int:slug>/', endpoint='school')
-
-
-class ChatListResource(CommonResource):
-
-    model = Chat
-    schema = ChatSchema
-
-    def get(self):
-
-        chats = self.model.query.filter(or_(self.model.sender_id == current_user.id, self.model.receiver_id == current_user.id))\
-            .group_by(self.model.receiver_id).all()
-
-        return jsonify({'success': 200, 'data': self.schema().dump(chats, many=True)})
-
-    def post(self):
-
-        data = request.json
-        data['sender_id'] = current_user.id
-        data['receiver_id'] = User.query.with_entities(User.username).filter(User.username == data['receiver']).first()[0]
-        chat, errors = self.schema().load(request.json, session=db.session)
-        if errors:
-            return make_response(jsonify({'error': 101, 'message': str(errors)}), 403)
-        db.session.commit()
-        return jsonify({'success': 200, 'message': 'user_profile added successfully', 'data': self.schema().dump(chat).data})
-
-api.add_resource(ChatListResource, '/chats/', endpoint='chats')
-
