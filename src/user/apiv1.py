@@ -1,9 +1,5 @@
-from flask import jsonify, request, make_response, redirect
-from flask_security.utils import verify_and_update_password, login_user
-from flask_security import current_user
-from sqlalchemy import or_
-
-from src import api, BaseResource, db, OpenResource
+from flask import jsonify, request, make_response
+from src import api, BaseResource, db
 from .models import UserProfile, User
 from .schemas import UserSchema, UserProfileSchema
 
@@ -78,7 +74,7 @@ class UserListResource(BaseResource):
 
 
 api.add_resource(UserListResource, '/users/', endpoint='users')
-api.add_resource(UserResource, '/user/<int:slug>/', endpoint='user')
+api.add_resource(UserResource, '/user/<string:slug>/', endpoint='user')
 
 
 class UserProfileResource(BaseResource):
@@ -143,29 +139,5 @@ class UserProfileListResource(BaseResource):
         db.session.commit()
         return jsonify({'success': 200, 'message': 'user_profile added successfully', 'data': self.schema().dump(user_profile).data})
 
-api.add_resource(UserProfileResource, '/user_profile/<int:slug>/', endpoint='user_profile')
+api.add_resource(UserProfileResource, '/user_profile/<string:slug>/', endpoint='user_profile')
 api.add_resource(UserProfileListResource, '/user_profiles/', endpoint='user_profiles')
-
-
-class UserLoginResource(OpenResource):
-
-    model = User
-    schema = UserSchema
-
-    def post(self):
-        if request.json:
-            data = request.json
-
-            user = self.model.query.filter(self.model.email == data['email']).first()
-            if user and verify_and_update_password(data['password'], user) and login_user(user):
-                user_data = self.schema().dump(user).data
-                return jsonify({'success': 200, 'data': user_data})
-            else:
-                return make_response(jsonify({'error': 403, 'data': 'invalid data'}), 403)
-        else:
-            data = request.form
-            user = self.model.query.filter(self.model.email == data['email']).first()
-            if user and verify_and_update_password(data['password'], user) and login_user(user):
-                return redirect('/test/v1/admin/', 302)
-
-api.add_resource(UserLoginResource, '/login/', endpoint='login')

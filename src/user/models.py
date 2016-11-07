@@ -1,5 +1,3 @@
-from hashlib import md5
-from src.utils.serializer_helper import serialize_data
 from datetime import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask_security import RoleMixin, UserMixin
@@ -32,21 +30,6 @@ class User(db.Model, BaseMixin, UserMixin, ReprMixin):
     login_count = db.Column(db.Integer)
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
-
-    @staticmethod
-    def hash_md5(data):
-        return md5(data.encode('utf-8')).hexdigest()
-
-    def get_auth_token(self):
-        pass
-
-    def generate_auth_token(self):
-        token = serialize_data([str(self.id), self.hash_md5(self.password)])
-        return token
-
-    @hybrid_property
-    def authentication_token(self):
-        return self.generate_auth_token()
 
     @hybrid_property
     def name(self):

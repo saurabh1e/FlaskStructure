@@ -31,7 +31,7 @@ class BaseConfig:
 
 class DevConfig(BaseConfig):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:root@localhost/chatapp'
+    SQLALCHEMY_DATABASE_URI = 'mysql://root:root@localhost/flask-test'
 
 
 class TestConfig(BaseConfig):

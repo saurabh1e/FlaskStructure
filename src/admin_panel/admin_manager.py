@@ -14,8 +14,8 @@ def index():
 class MyModel(sqla.ModelView):
     column_display_pk = True
 
-    def is_accessible(self):
-        return current_user.has_role('admin')
+    # def is_accessible(self):
+    #     return current_user.has_role('admin')
 
 
 admin.add_view(MyModel(User, session=db.session))
