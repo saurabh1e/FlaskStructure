@@ -21,7 +21,6 @@ class User(db.Model, BaseMixin, UserMixin, ReprMixin):
     password = db.Column(db.String(255), default='', nullable=False)
     username = db.Column(db.String(127), nullable=True)
     user_type = db.Column(db.Enum('student', 'counsellor'), default='counsellor')
-    school_id = db.Column(db.Integer, db.ForeignKey('school.id'))
 
     active = db.Column(db.Boolean())
     confirmed_at = db.Column(db.DateTime())
